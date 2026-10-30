@@ -15,6 +15,7 @@ import {
     updateRolePermissions,
     deleteRole,
 } from '../../services/roleService';
+import { getPermissionGroups } from '../../services/permissionService';
 
 const FIELDS = ['name', 'type', 'level', 'dataScope'];
 const VERBS = ['view_', 'add_', 'edit_', 'delete_', 'manage_', 'assign_', 'change_'];
@@ -50,6 +51,7 @@ export default function RoleDetailDialog({ roleId, catalog = [], open, onOpenCha
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [catalogKeys, setCatalogKeys] = useState([]);
 
     useEffect(() => {
         if (!open || !roleId) return;
@@ -85,9 +87,22 @@ export default function RoleDetailDialog({ roleId, catalog = [], open, onOpenCha
         };
     }, [open, roleId]);
 
+    useEffect(() => {
+        if (!open) return;
+        getPermissionGroups()
+            .then((groups) => {
+                const keys = groups.flatMap((g) => [
+                    g.permissionKey,
+                    ...(g.subPermissions || []).map((p) => p.permissionKey),
+                ]);
+                setCatalogKeys(keys);
+            })
+            .catch(() => setCatalogKeys([]));
+    }, [open]);
+
     const options = useMemo(
-        () => [...new Set([...catalog, ...(original?.permissions || [])])].sort(),
-        [catalog, original]
+        () => [...new Set([...catalogKeys, ...catalog, ...(original?.permissions || [])])].sort(),
+        [catalogKeys, catalog, original]
     );
 
     const fieldsChanged =

@@ -6,12 +6,15 @@ import DashboardHome from './pages/DashboardHome';
 import RolesPermissions from './pages/RolesPermissions';
 import Users from './pages/Users';
 import LeadSources from './pages/LeadSources';
-
+import PermissionsCatalog from './pages/PermissionsCatalog';
+import Teams from './pages/Teams';
+import ForgotPassword from './pages/ForgotPassword';
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* Protected Dashboard Routes */}
         <Route path="/dashboard" element={<DashboardLayout />}>
@@ -20,6 +23,8 @@ function App() {
           <Route path="users" element={<Users />} />
           <Route path="roles" element={<RolesPermissions />} />
           <Route path="lead-sources" element={<LeadSources />} />
+          <Route path="permissions-catalog" element={<PermissionsCatalog />} />
+          <Route path="teams" element={<Teams />} />
         </Route>
 
         {/* Fallback */}

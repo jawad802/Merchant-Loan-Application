@@ -67,3 +67,4 @@ export async function logoutUser() {
     const { data } = await API.get('/user/logout');
     return data;
 }
+

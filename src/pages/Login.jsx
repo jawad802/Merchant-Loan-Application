@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import API from '../services/api';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -30,6 +30,7 @@ export default function Login() {
 
             localStorage.setItem('accessToken', result.accessToken);
             localStorage.setItem('csrfToken', result.csrfToken || '');
+            localStorage.setItem('refreshToken', result.refreshToken || '');
             navigate('/dashboard', { replace: true });
         } catch (err) {
             const serverText =
@@ -48,8 +49,14 @@ export default function Login() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-background px-4">
-            <Card className="w-full max-w-md shadow-md">
+        <div className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-8">
+            <div
+                aria-hidden="true"
+                className="absolute inset-0 -z-20 bg-cover bg-center"
+                style={{ backgroundImage: "url('/login-background.jpg')" }}
+            />
+            <div aria-hidden="true" className="absolute inset-0 -z-10 bg-slate-950/45" />
+            <Card className="w-full max-w-md border border-white/70 bg-white/95 shadow-2xl backdrop-blur-sm">
                 <CardHeader className="space-y-1 text-center pb-6 border-b border-border">
                     <div className="mx-auto w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg mb-2 shadow-sm">
                         M
@@ -71,7 +78,7 @@ export default function Login() {
                         <div className="space-y-2 cursor-pointer">
                             <label htmlFor='Email/Username' className="text-base font-medium text-foreground">Email / Username</label>
                             <Input
-                                type="email"
+                                type="text"
                                 placeholder="name@example.com"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
@@ -112,9 +119,15 @@ export default function Login() {
                         >
                             {loading ? 'Signing in...' : 'Sign In'}
                         </Button>
+                        <div className="text-center">
+                            <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline dark:text-blue-400">
+                                Forgot password?
+                            </Link>
+                        </div>
                     </form>
                 </CardContent>
             </Card>
         </div>
     );
 }
+

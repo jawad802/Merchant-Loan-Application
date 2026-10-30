@@ -1,88 +1,133 @@
-﻿import React, { useEffect, useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+﻿import { useCallback, useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getLeadStatusCounts, getRecentLeads } from '@/services/leadService';
+
+function errorMessage(err, fallback) {
+    if (err?.response?.status === 403) return "You don't have permission to view lead data.";
+    return err?.response?.data?.message || fallback;
+}
+
+function StatCard({ label, value, note, loading }) {
+    return (
+        <Card className="shadow-sm">
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold text-foreground">{loading ? '...' : value}</div>
+                <p className="mt-1 text-xs text-muted-foreground">{note}</p>
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function DashboardHome() {
-    const [stats, setStats] = useState({ total: 0, pending: 0, active: 0 });
+    const [statuses, setStatuses] = useState([]);
+    const [total, setTotal] = useState(0);
+    const [recent, setRecent] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        let cancelled = false;
-
-        const load = async () => {
-            setLoading(true);
-            setError('');
-            try {
-                const records = await getMerchants();
-                const active = Array.isArray(records)
-                    ? records.filter((m) => m.statusInfo?.isActive).length
-                    : 0;
-
-                if (!cancelled) {
-                    setStats({
-                        total: Array.isArray(records) ? records.length : 0,
-                        active,
-                        pending: (Array.isArray(records) ? records.length : 0) - active,
-                    });
-                }
-            } catch (err) {
-                if (!cancelled) {
-                    setError(
-                        err.response?.status === 403
-                            ? "You don't have permission to view merchant stats."
-                            : 'Could not load dashboard numbers.'
-                    );
-                }
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        };
-
-        load();
-        return () => {
-            cancelled = true;
-        };
+    const load = useCallback(async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const [counts, leads] = await Promise.all([
+                getLeadStatusCounts(),
+                getRecentLeads({ limit: 5 }),
+            ]);
+            setStatuses(counts.statuses ?? []);
+            setTotal(counts.total ?? 0);
+            setRecent(leads);
+        } catch (err) {
+            setError(errorMessage(err, 'Could not load dashboard numbers.'));
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    const display = (value) => (loading ? '...' : value);
+    useEffect(() => {
+        load();
+    }, [load]);
+
+    const countOf = (key) => statuses.find((s) => s.status === key)?.count ?? 0;
+    const labelOf = (key) => statuses.find((s) => s.status === key)?.label ?? key;
 
     const cards = [
-        { label: 'Total Merchants', value: display(stats.total), note: 'All registered merchants' },
-        { label: 'Pending Review', value: display(stats.pending), note: 'Not yet active' },
-        { label: 'Active Merchants', value: display(stats.active), note: 'Currently active' },
+        { label: 'Total Leads', value: total, note: 'All leads' },
+        { label: 'New Leads', value: countOf('no_attempt'), note: 'No contact yet' },
+        { label: 'Submitted', value: countOf('submitted'), note: 'Sent for approval' },
+        { label: 'Funded', value: countOf('funded'), note: 'Deals funded' },
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-4 md:p-6">
+            <div>
+                <h1 className="text-2xl font-semibold">Dashboard</h1>
+                <p className="text-sm text-muted-foreground">Lead pipeline at a glance.</p>
+            </div>
+
             {error && (
-                <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
-                    {error}
+                <div
+                    role="alert"
+                    className="flex items-center justify-between gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+                >
+                    <span>{error}</span>
+                    <button onClick={load} className="text-xs font-medium underline">
+                        Retry
+                    </button>
                 </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 md:gap-6">
                 {cards.map((c) => (
-                    <Card key={c.label} className="shadow-sm">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">{c.label}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-foreground">{c.value}</div>
-                            <p className="text-xs text-muted-foreground mt-1">{c.note}</p>
-                        </CardContent>
-                    </Card>
+                    <StatCard key={c.label} {...c} loading={loading} />
                 ))}
-
-                <Card className="shadow-sm">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">System Status</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">Operational</div>
-                        <p className="text-xs text-muted-foreground mt-1">All APIs connected</p>
-                    </CardContent>
-                </Card>
             </div>
+
+            <Card className="shadow-sm">
+                <CardHeader>
+                    <CardTitle className="text-base">Recent leads</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {loading ? (
+                        <p className="py-6 text-center text-sm text-muted-foreground">Loading…</p>
+                    ) : recent.length === 0 ? (
+                        <p className="py-6 text-center text-sm text-muted-foreground">No leads yet.</p>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b text-left text-muted-foreground">
+                                        <th className="py-2 pr-4 font-medium">Name</th>
+                                        <th className="py-2 pr-4 font-medium">Status</th>
+                                        <th className="py-2 pr-4 font-medium">Requested</th>
+                                        <th className="py-2 font-medium">Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {recent.map((lead) => (
+                                        <tr key={lead._id} className="border-b">
+                                            <td className="py-3 pr-4 font-medium">
+                                                {lead.businessName ?? lead.name ?? '—'}
+                                            </td>
+                                            <td className="py-3 pr-4">{labelOf(lead.status)}</td>
+                                            <td className="py-3 pr-4">
+                                                {lead.requestedAmount != null
+                                                    ? `$${Number(lead.requestedAmount).toLocaleString()}`
+                                                    : '—'}
+                                            </td>
+                                            <td className="py-3 text-muted-foreground">
+                                                {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : '—'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 }

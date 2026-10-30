@@ -23,6 +23,8 @@ const navItems = [
     { name: 'Users', path: '/dashboard/users', icon: Users },
     { name: 'Roles & Permissions', path: '/dashboard/roles', icon: ShieldCheck },
     { name: 'Lead Sources', path: '/dashboard/lead-sources', icon: Globe },
+    { name: 'Permissions Catalog', path: '/dashboard/permissions-catalog', icon: ShieldCheck },
+    { name: 'Teams', path: '/dashboard/teams', icon: Settings },
 ];
 
 export default function AppSidebar({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) {
@@ -52,6 +54,7 @@ export default function AppSidebar({ collapsed, setCollapsed, mobileOpen, setMob
             // Even if the server call fails, clear the local session below
         } finally {
             localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken')
             localStorage.removeItem('csrfToken');
             navigate('/login', { replace: true });
         }
