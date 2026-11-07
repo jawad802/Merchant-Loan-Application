@@ -300,3 +300,4 @@ function CreateRoleDialog({ open, onOpenChange, onCreated }) {
         </Dialog>
     );
 }
+

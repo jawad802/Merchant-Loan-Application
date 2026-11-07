@@ -454,3 +454,4 @@ function TeamDialog({ teamId, open, onOpenChange, onChanged }) {
         </Dialog>
     );
 }
+

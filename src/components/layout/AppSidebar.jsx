@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     Users,
     ShieldCheck,
     Settings,
-    Timer,
     Globe,
     PanelLeftClose,
     PanelLeft,
@@ -14,25 +13,47 @@ import {
     LogOut,
     Building2,
     ChevronUp,
+    Search,
+    Calendar,
+    LensIcon,
+    CableCarIcon,
+    TagPlusIcon,
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { logoutUser } from '../../services/userService';
 
-const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Users', path: '/dashboard/users', icon: Users },
-    { name: 'Roles & Permissions', path: '/dashboard/roles', icon: ShieldCheck },
-    { name: 'Lead Sources', path: '/dashboard/lead-sources', icon: Globe },
-    { name: 'Permissions Catalog', path: '/dashboard/permissions-catalog', icon: ShieldCheck },
-    { name: 'Teams', path: '/dashboard/teams', icon: Settings },
+// Pages that exist today. Add Leads, Calendar, Lenders, Participants and Settings
+// here once their pages are built.
+const sections = [
+    {
+        label: null,
+        items: [
+            { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, end: true },
+            { name: 'Lead Sources', path: '/dashboard/lead-sources', icon: Globe },
+        ],
+    },
+    {
+        label: 'Administration',
+        items: [
+            { name: 'Teams', path: '/dashboard/teams', icon: TagPlusIcon },
+            { name: 'Users', path: '/dashboard/users', icon: Users },
+            { name: 'Roles & Permissions', path: '/dashboard/roles', icon: ShieldCheck },
+            { name: 'Permissions Catalog', path: '/dashboard/permissions-catalog', icon: CableCarIcon },
+            { name: "Calendar", path: "/dashboard/calendar", icon: Calendar },
+            { name: "Lenders", path: "/dashboard/lenders", icon: LensIcon },
+        ],
+    },
 ];
 
 export default function AppSidebar({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) {
     const { theme, toggleTheme } = useTheme();
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [query, setQuery] = useState('');
     const navigate = useNavigate();
-
     const menuRef = useRef(null);
+
+    // Labels show on mobile when the drawer is open, and on desktop when not collapsed.
+    const showLabels = !collapsed || mobileOpen;
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -50,117 +71,137 @@ export default function AppSidebar({ collapsed, setCollapsed, mobileOpen, setMob
         setUserMenuOpen(false);
         try {
             await logoutUser();
-        } catch (err) {
-            // Even if the server call fails, clear the local session below
+        } catch {
+            // Even if the server call fails, clear the local session below.
         } finally {
             localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken')
+            localStorage.removeItem('refreshToken');
             localStorage.removeItem('csrfToken');
             navigate('/login', { replace: true });
         }
     };
 
+    const matches = (name) => name.toLowerCase().includes(query.trim().toLowerCase());
+
     return (
         <aside
             className={`
-                fixed inset-y-0 left-0 z-40 flex flex-col justify-between
-                h-screen w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground
-                transition-all duration-300 select-none
+                fixed inset-y-0 left-0 z-40 flex h-screen w-64 flex-col justify-between
+                bg-sidebar text-sidebar-foreground select-none transition-all duration-300
                 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
                 md:sticky md:top-0 md:translate-x-0
-                ${collapsed ? 'md:w-16' : 'md:w-64'}
+                ${collapsed ? 'md:w-20' : 'md:w-64'}
             `}
         >
-            {/* Header / Logo */}
-            <div>
-                <div className="h-16 flex items-center justify-between px-3 border-b border-sidebar-border">
-                    {(!collapsed || mobileOpen) && (
-                        <div className="flex items-center gap-2.5 font-bold text-base tracking-tight px-2 min-w-0">
-                            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0">
-                                <Building2 className="h-4 w-4" />
-                            </div>
-                            <span className="truncate">Merchant Portal</span>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+                {/* Logo and collapse controls */}
+                <div className="flex h-16 items-center justify-between px-4">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
+                            <Building2 className="h-5 w-5" />
                         </div>
-                    )}
+                        {showLabels && (
+                            <div className="flex min-w-0 items-center gap-2">
+                                <span className="truncate text-base font-bold">Bolt FG</span>
+                                <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase">
+                                    dev
+                                </span>
+                            </div>
+                        )}
+                    </div>
 
-                    {/* Desktop collapse button */}
                     <button
                         onClick={() => setCollapsed(!collapsed)}
-                        className="hidden md:flex p-1.5 rounded-md text-muted-foreground cursor-pointer hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                        className="hidden cursor-pointer rounded-md p-1.5 text-blue-100/80 transition-colors hover:bg-white/10 hover:text-white md:flex"
                         title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                     >
                         {collapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
                     </button>
 
-                    {/* Mobile close button */}
                     <button
                         onClick={closeMobile}
-                        className="md:hidden p-1.5 rounded-md text-muted-foreground hover:bg-sidebar-accent"
+                        className="rounded-md p-1.5 text-blue-100/80 hover:bg-white/10 md:hidden"
                         aria-label="Close menu"
                     >
                         <PanelLeftClose className="h-5 w-5" />
                     </button>
                 </div>
 
-                {/*  */}
+                {/* Search */}
+                {showLabels && (
+                    <div className="px-3 pb-2">
+                        <div className="relative">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-200/70" />
+                            <input
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder="Search menu…"
+                                className="h-9 w-full rounded-lg bg-white/10 pl-9 pr-3 text-sm text-white placeholder:text-blue-200/70 focus:outline-none focus:ring-2 focus:ring-white/30"
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {/* Navigation */}
-                <nav className="p-2 space-y-1 mt-2">
-                    {navItems.map((item) => {
-                        const Icon = item.icon;
-                        const isCollapsedDesktop = collapsed && !mobileOpen;
+                <nav className="space-y-5 px-3 pt-3">
+                    {sections.map((section) => {
+                        const items = section.items.filter((item) => matches(item.name));
+                        if (items.length === 0) return null;
+
                         return (
-                            <NavLink
-                                key={item.path}
-                                to={item.path}
-                                end={item.path === '/dashboard'}
-                                onClick={closeMobile}
-                                title={item.name}
-                                className={({ isActive }) =>
-                                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
-                                        ? 'bg-blue-600 text-white shadow-sm'
-                                        : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                                    } ${isCollapsedDesktop ? 'md:justify-center md:px-0' : ''}`
-                                }
-                            >
-                                <Icon className="h-5 w-5 shrink-0" />
-                                <span className={`truncate ${collapsed && !mobileOpen ? 'md:hidden' : ''}`}>
-                                    {item.name}
-                                </span>
-                            </NavLink>
+                            <div key={section.label ?? 'main'} className="space-y-1">
+                                {section.label && showLabels && (
+                                    <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-blue-200/70">
+                                        {section.label}
+                                    </p>
+                                )}
+                                {items.map((item) => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <NavLink
+                                            key={item.path}
+                                            to={item.path}
+                                            end={item.end}
+                                            onClick={closeMobile}
+                                            title={item.name}
+                                            className={({ isActive }) =>
+                                                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
+                                                    ? 'bg-blue-600 text-white shadow-md'
+                                                    : 'text-blue-100/80 hover:bg-white/10 hover:text-white'
+                                                } ${!showLabels ? 'md:justify-center md:px-0' : ''}`
+                                            }
+                                        >
+                                            <Icon className="h-5 w-5 shrink-0" />
+                                            {showLabels && <span className="truncate">{item.name}</span>}
+                                        </NavLink>
+                                    );
+                                })}
+                            </div>
                         );
                     })}
                 </nav>
             </div>
 
             {/* Bottom controls */}
-            <div className="p-2 border-t border-sidebar-border space-y-1">
-                {/* Theme switch */}
+            <div className="space-y-1 border-t border-white/10 p-3">
                 <button
                     onClick={toggleTheme}
-                    className="w-full h-9 flex items-center gap-3 px-2.5 rounded-md text-base cursor-pointer text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                    className="flex h-9 w-full cursor-pointer items-center gap-3 rounded-md px-2.5 text-sm text-blue-100/80 transition-colors hover:bg-white/10 hover:text-white"
                 >
-                    {theme === 'dark' ? (
-                        <Sun className="h-5 w-5 shrink-0" />
-                    ) : (
-                        <Moon className="h-5 w-5 shrink-0" />
-                    )}
-                    <span className={`truncate ${collapsed && !mobileOpen ? 'md:hidden' : ''}`}>
-                        {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-                    </span>
+                    {theme === 'dark' ? <Sun className="h-5 w-5 shrink-0" /> : <Moon className="h-5 w-5 shrink-0" />}
+                    {showLabels && <span className="truncate">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>}
                 </button>
 
-                {/* Profile + menu */}
                 <div ref={menuRef} className="relative">
                     {userMenuOpen && (
-                        <div className="absolute bottom-full left-0 right-0 mb-2 p-1.5 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg ring-1 ring-black/5 z-50">
-                            <div className="px-2.5 py-2 mb-1 border-b border-border">
-                                <p className="text-sm font-medium truncate">Syed Jawad</p>
-                                <p className="text-xs text-muted-foreground truncate">admin@boltfg.com</p>
+                        <div className="absolute bottom-full left-0 right-0 z-50 mb-2 rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-lg">
+                            <div className="mb-1 border-b border-border px-2.5 py-2">
+                                <p className="truncate text-sm font-medium">Syed Jawad</p>
+                                <p className="truncate text-xs text-muted-foreground">admin@boltfg.com</p>
                             </div>
                             <button
                                 onClick={handleSignOut}
-                                className="w-full h-9 flex items-center gap-2.5 px-2.5 rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+                                className="flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
                             >
                                 <LogOut className="h-4 w-4 shrink-0" />
                                 Sign out
@@ -170,23 +211,28 @@ export default function AppSidebar({ collapsed, setCollapsed, mobileOpen, setMob
 
                     <button
                         onClick={() => setUserMenuOpen((o) => !o)}
-                        className={`w-full h-12 flex items-center cursor-pointer gap-3 px-2 rounded-md hover:bg-sidebar-accent transition-colors ${userMenuOpen ? 'bg-sidebar-accent' : ''
+                        className={`flex h-12 w-full cursor-pointer items-center gap-3 rounded-lg px-2 transition-colors hover:bg-white/10 ${userMenuOpen ? 'bg-white/10' : ''
                             }`}
                     >
-                        <div className="h-9 w-9 rounded-full bg-blue-600 text-white text-sm font-semibold flex items-center justify-center shrink-0">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm font-semibold">
                             SJ
                         </div>
-                        <div className={`flex-1 min-w-0 text-left ${collapsed && !mobileOpen ? 'md:hidden' : ''}`}>
-                            <p className="text-base font-medium truncate leading-tight">Syed Jawad</p>
-                            <p className="text-sm text-muted-foreground truncate">Administrator</p>
-                        </div>
-                        <ChevronUp
-                            className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${userMenuOpen ? 'rotate-180' : ''
-                                } ${collapsed && !mobileOpen ? 'md:hidden' : ''}`}
-                        />
+                        {showLabels && (
+                            <>
+                                <div className="min-w-0 flex-1 text-left">
+                                    <p className="truncate text-sm font-medium leading-tight">Syed Jawad</p>
+                                    <p className="truncate text-xs text-blue-200/70">Administrator</p>
+                                </div>
+                                <ChevronUp
+                                    className={`h-4 w-4 shrink-0 text-blue-200/70 transition-transform ${userMenuOpen ? 'rotate-180' : ''
+                                        }`}
+                                />
+                            </>
+                        )}
                     </button>
                 </div>
             </div>
         </aside>
     );
 }
+

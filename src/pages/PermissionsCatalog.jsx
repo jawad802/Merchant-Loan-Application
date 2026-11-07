@@ -173,3 +173,4 @@ export default function PermissionsCatalog() {
         </div>
     );
 }
+

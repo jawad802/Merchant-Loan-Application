@@ -9,6 +9,8 @@ import LeadSources from './pages/LeadSources';
 import PermissionsCatalog from './pages/PermissionsCatalog';
 import Teams from './pages/Teams';
 import ForgotPassword from './pages/ForgotPassword';
+import Calendar from './pages/Calendar';
+import Lenders from './pages/Lenders';
 function App() {
   return (
     <Router>
@@ -25,6 +27,8 @@ function App() {
           <Route path="lead-sources" element={<LeadSources />} />
           <Route path="permissions-catalog" element={<PermissionsCatalog />} />
           <Route path="teams" element={<Teams />} />
+          <Route path="calendar" element={<Calendar />} />
+          <Route path="lenders" element={<Lenders />} />
         </Route>
 
         {/* Fallback */}
